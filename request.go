@@ -56,7 +56,9 @@ func Do[T any, E any](ctx context.Context, opts RequestOptions) (*T, Error, erro
 		req.Header.Set("Content-Type", "application/json")
 	}
 
+	// Выполняем с таймаутом
 	if err := client.DoTimeout(req, resp, opts.Timeout); err != nil {
+		// Проверяем отмену контекста
 		select {
 		case <-ctx.Done():
 			return nil, nil, ctx.Err()
@@ -69,11 +71,18 @@ func Do[T any, E any](ctx context.Context, opts RequestOptions) (*T, Error, erro
 	body := resp.Body()
 
 	if status < 200 || status >= 300 {
+		if len(body) == 0 {
+			return nil, &ErrorWrapper[E]{status: status, raw: ""}, nil
+		}
 		var parsed E
 		if err := json.Unmarshal(body, &parsed); err == nil {
 			return nil, &ErrorWrapper[E]{status: status, payload: &parsed, raw: string(body)}, nil
 		}
 		return nil, &ErrorWrapper[E]{status: status, raw: string(body)}, nil
+	}
+
+	if len(body) == 0 {
+		return new(T), nil, nil
 	}
 
 	var result T
