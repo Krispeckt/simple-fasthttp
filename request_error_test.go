@@ -9,7 +9,7 @@ import (
 
 func TestDoErrorNoURL(t *testing.T) {
 	opts := RequestOptions{}
-	_, _, err := Do[struct{}, Error](context.Background(), opts)
+	_, _, err := Do[struct{}, Http[any]](context.Background(), opts)
 	if err == nil {
 		t.Error("expected error when URL is nil")
 	}
@@ -22,7 +22,7 @@ func TestDoErrorTimeout(t *testing.T) {
 		Timeout: 1 * time.Millisecond,
 	}
 
-	_, _, err := Do[struct{}, Error](context.Background(), opts)
+	_, _, err := Do[struct{}, Http[any]](context.Background(), opts)
 	if err == nil {
 		t.Error("expected timeout error")
 	}

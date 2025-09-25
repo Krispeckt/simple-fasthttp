@@ -52,7 +52,7 @@ func TestDoPostSuccess(t *testing.T) {
 		},
 	}
 
-	res, httpErr, err := Do[LoginResponse, Error](context.Background(), opts)
+	res, httpErr, err := Do[LoginResponse, Http[any]](context.Background(), opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

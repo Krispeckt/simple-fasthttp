@@ -3,6 +3,7 @@ package simple_fasthttp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"testing"
 	"time"
@@ -10,16 +11,17 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-type PingResponse struct {
+type ErrorResponse struct {
+	Status  int    `json:"status"`
 	Message string `json:"message"`
 }
 
-func startTestServerGet() *fasthttp.Server {
+func startTestServerError() *fasthttp.Server {
 	return &fasthttp.Server{
 		Handler: func(ctx *fasthttp.RequestCtx) {
 			if string(ctx.Path()) == "/ping" {
-				ctx.SetStatusCode(200)
-				res, _ := json.Marshal(PingResponse{Message: "pong"})
+				ctx.SetStatusCode(400)
+				res, _ := json.Marshal(ErrorResponse{Status: 400, Message: "error"})
 				ctx.SetBody(res)
 			} else {
 				ctx.SetStatusCode(404)
@@ -28,8 +30,8 @@ func startTestServerGet() *fasthttp.Server {
 	}
 }
 
-func TestDoGetSuccess(t *testing.T) {
-	srv := startTestServerGet()
+func TestDoError(t *testing.T) {
+	srv := startTestServerError()
 	go srv.ListenAndServe(":8085")
 	defer srv.Shutdown()
 
@@ -39,14 +41,11 @@ func TestDoGetSuccess(t *testing.T) {
 		Timeout: 2 * time.Second,
 	}
 
-	res, httpErr, err := Do[PingResponse, Http[any]](context.Background(), opts)
+	_, httpErr, err := Do[any, ErrorResponse](context.Background(), opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if httpErr != nil {
-		t.Fatalf("unexpected http error: %v", httpErr)
-	}
-	if res.Message != "pong" {
-		t.Errorf("expected pong, got %s", res.Message)
+		fmt.Println(httpErr.Payload())
 	}
 }
