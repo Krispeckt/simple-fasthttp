@@ -53,13 +53,9 @@ func main() {
     ctx := context.Background()
     u, _ := url.Parse("http://localhost:8080/ping")
 
-    res, httpErr, err := shttp.GetSimple[Response](ctx, u)
+    res, _, err := shttp.GetSimple[Response](ctx, u)
     if err != nil {
         panic(err)
-    }
-    if httpErr != nil {
-        fmt.Printf("HTTP error: %v\n", httpErr)
-        return
     }
 
     fmt.Println("Response:", res.Message)
@@ -93,13 +89,9 @@ func main() {
         Timeout: 3 * time.Second,
     }
 
-    res, httpErr, err := shttp.Do[Response, shttp.Error](ctx, opts)
+    res, _, err := shttp.Do[Response, any](ctx, opts)
     if err != nil {
         panic(err)
-    }
-    if httpErr != nil {
-        fmt.Printf("HTTP error: %v\n", httpErr)
-        return
     }
 
     fmt.Println("Response:", res.Message)
@@ -134,13 +126,9 @@ func login() {
         },
     }
 
-    res, httpErr, err := shttp.Do[LoginResponse, shttp.Error](ctx, opts)
+    res, _, err := shttp.Do[LoginResponse, any](ctx, opts)
     if err != nil {
         panic(err)
-    }
-    if httpErr != nil {
-        fmt.Printf("HTTP error: %v\n", httpErr)
-        return
     }
 
     fmt.Println("Token:", res.Token)
@@ -174,14 +162,13 @@ type RequestOptions struct {
 ### `Do[T, E]`
 
 ``` go
-func Do[T any, E any](ctx context.Context, opts RequestOptions) (*T, Error, error)
+func Do[T any, E any](ctx context.Context, opts RequestOptions) (*T, Http, error)
 ```
 
 - `T` - success response type (JSON will be unmarshalled into this)
-- `E` - error response type
+- `E` - error response type in http data
 
-Returns: - `*T` - parsed response - `Error` - custom error type (if
-HTTP status \>= 400) - `error` - network/serialization errors
+Returns: - `*T` - parsed response - `Http` - custom http type with http data - `error` - network/serialization errors
 
 ------------------------------------------------------------------------
 

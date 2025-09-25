@@ -19,7 +19,7 @@ type RequestOptions struct {
 	Timeout time.Duration
 }
 
-func Do[T any, E any](ctx context.Context, opts RequestOptions) (*T, Error, error) {
+func Do[T any, E any](ctx context.Context, opts RequestOptions) (*T, Http[E], error) {
 	if opts.URL == nil {
 		return nil, nil, errors.New("url is required")
 	}
@@ -56,9 +56,7 @@ func Do[T any, E any](ctx context.Context, opts RequestOptions) (*T, Error, erro
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	// Выполняем с таймаутом
 	if err := client.DoTimeout(req, resp, opts.Timeout); err != nil {
-		// Проверяем отмену контекста
 		select {
 		case <-ctx.Done():
 			return nil, nil, ctx.Err()
@@ -70,24 +68,27 @@ func Do[T any, E any](ctx context.Context, opts RequestOptions) (*T, Error, erro
 	status := resp.StatusCode()
 	body := resp.Body()
 
+	headers := make(map[string]string)
+	for k, v := range resp.Header.All() {
+		headers[string(k)] = string(v)
+	}
+
 	if status < 200 || status >= 300 {
 		if len(body) == 0 {
-			return nil, &ErrorWrapper[E]{status: status, raw: ""}, nil
+			return nil, &HttpWrapper[E]{status: status, headers: headers, raw: ""}, nil
 		}
 		var parsed E
 		if err := json.Unmarshal(body, &parsed); err == nil {
-			return nil, &ErrorWrapper[E]{status: status, payload: &parsed, raw: string(body)}, nil
+			return nil, &HttpWrapper[E]{status: status, headers: headers, payload: &parsed, raw: string(body)}, nil
 		}
-		return nil, &ErrorWrapper[E]{status: status, raw: string(body)}, nil
-	}
-
-	if len(body) == 0 {
-		return new(T), nil, nil
+		return nil, &HttpWrapper[E]{status: status, headers: headers, raw: string(body)}, nil
 	}
 
 	var result T
-	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, nil, err
+	if len(body) != 0 {
+		if err := json.Unmarshal(body, &result); err != nil {
+			return nil, nil, err
+		}
 	}
-	return &result, nil, nil
+	return &result, &HttpWrapper[E]{status: status, headers: headers, raw: string(body)}, nil
 }
