@@ -17,6 +17,7 @@ type RequestOptions struct {
 	Headers map[string]string
 	Body    any
 	Timeout time.Duration
+	Proxy   *ProxyOptions
 }
 
 func Do[T any, E any](ctx context.Context, opts RequestOptions) (*T, Http[E], error) {
@@ -29,12 +30,19 @@ func Do[T any, E any](ctx context.Context, opts RequestOptions) (*T, Http[E], er
 	if opts.Timeout == 0 {
 		opts.Timeout = 5 * time.Second
 	}
-
 	if opts.Params != nil {
 		opts.URL.RawQuery = opts.Params.Encode()
 	}
 
-	client := fasthttp.Client{}
+	client := &fasthttp.Client{}
+	if opts.Proxy != nil {
+		var err error
+		client, err = opts.Proxy.NewClient(opts.Timeout)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseRequest(req)

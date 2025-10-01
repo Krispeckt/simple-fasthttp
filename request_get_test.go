@@ -39,12 +39,12 @@ func TestDoGetSuccess(t *testing.T) {
 		Timeout: 2 * time.Second,
 	}
 
-	res, httpErr, err := Do[PingResponse, Http[any]](context.Background(), opts)
+	res, httpData, err := Do[PingResponse, Http[any]](context.Background(), opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if httpErr != nil {
-		t.Fatalf("unexpected http error: %v", httpErr)
+	if httpData.Status() != 200 {
+		t.Fatalf("status code not 200: %d", httpData.Status())
 	}
 	if res.Message != "pong" {
 		t.Errorf("expected pong, got %s", res.Message)

@@ -41,11 +41,12 @@ func TestDoError(t *testing.T) {
 		Timeout: 2 * time.Second,
 	}
 
-	_, httpErr, err := Do[any, ErrorResponse](context.Background(), opts)
+	_, httpData, err := Do[any, ErrorResponse](context.Background(), opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if httpErr != nil {
-		fmt.Println(httpErr.Payload())
+	if httpData.Status() != 400 {
+		t.Fatalf("status code not 404: %d", httpData.Status())
 	}
+	fmt.Println(httpData.Payload())
 }
